@@ -1,0 +1,58 @@
+# See https://pre-commit.com for more information
+# See https://pre-commit.com/hooks.html for more hooks
+# Run pre-commit on all files:: pre-commit run --all-files
+# Run pre-commit on specific file/s::pre-commit  run --files path-to-file1 path-to-file2
+
+repos:
+-   repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.4.0
+    hooks:
+    -   id: check-added-large-files
+    -   id: check-toml
+    -   id: check-yaml
+        args:
+        -   --unsafe
+    -   id: end-of-file-fixer
+    -   id: trailing-whitespace
+-   repo: https://github.com/asottile/pyupgrade
+    rev: v3.7.0
+    hooks:
+    -   id: pyupgrade
+        args:
+        - --py3-plus
+        - --keep-runtime-typing
+-   repo: https://github.com/charliermarsh/ruff-pre-commit
+    rev: v0.0.275
+    hooks:
+    -   id: ruff
+        args:  ["--fix", --line-length=120]
+-   repo: https://github.com/psf/black
+    rev: 23.3.0
+    hooks:
+    -   id: black
+        args: [--line-length=120]
+-   repo: local
+    hooks:
+    -   id: check-python-version
+        name: Check Python Version
+        entry: python3
+        args: ["-c", "import sys; exit(1) if sys.version_info < (3, 7) else exit(0);"]
+        language: system
+        types: [python]
+
+    -   id: check-branch-name
+        name: Check Branch Name
+        entry: bash
+        args: ["-c", '[[ $(git symbolic-ref --short HEAD) =~ ^(feature|bugfix|enhancement|improvement|library|prerelease|release|hotfix).* ]] || exit 1']
+        language: system
+        exclude: '\.md$'
+
+-   repo: https://github.com/pre-commit/mirrors-isort
+    rev: v5.10.1
+    hooks:
+    -   id: isort
+        args: ["--profile", "black", --line-length=120]
+
+ci:
+    autofix_commit_msg: 🎨 [pre-commit.ci] Auto format from pre-commit.com hooks
+    autoupdate_commit_msg: ⬆ [pre-commit.ci] pre-commit autoupdate
