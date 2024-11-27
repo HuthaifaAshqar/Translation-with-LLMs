@@ -131,4 +131,5 @@ dmypy.json
 cython_debug/
 
 
-gemini_results.txt
+run_logs.txt
+*.csv

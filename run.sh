@@ -1,1 +1,1 @@
-python3 main.py --model GEMINI > gemini_results.txt 2>&1
+python3 main.py > run_logs.txt 2>&1

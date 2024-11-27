@@ -1,32 +1,25 @@
-import argparse
-import sys
-
 from dotenv import load_dotenv
-from loguru import logger
 
 from constants import SupportedModel
-from utils import inspect_flores200, test_api_call
+from translation_agent import TranslationAgent
 
 if __name__ == "__main__":
     # Load .env file
     load_dotenv()
 
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "-m",
-        "--model",
-        type=str,
-        choices=[m.name for m in SupportedModel],
-        default=SupportedModel.GEMINI,
-        help="API model to use",
+    # make_model_rhyme(SupportedModel.GEMINI)
+    # inspect_flores200()
+
+    translator = TranslationAgent()
+    (
+        translator.sample(n=1)
+        .select_model(SupportedModel.GEMINI)
+        .generate_context()
+        .translate_with_context()
+        .select_model(SupportedModel.GPT4O)
+        .generate_context()
+        .translate_with_context()
+        .select_model(SupportedModel.LLAMA3)
+        .generate_context()
+        .translate_with_context()
     )
-    args = parser.parse_args()
-
-    try:
-        selected_model = SupportedModel[args.model]
-    except ValueError as e:
-        logger.error(e)
-        sys.exit(1)
-
-    test_api_call(selected_model)
-    inspect_flores200()
