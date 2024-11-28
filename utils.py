@@ -28,24 +28,15 @@ def inspect_flores200():
     logger.info(train_split[0])
 
 
-def generate_context_paragraph(sentence, model: SupportedModel = SupportedModel.GEMINI):
-    if model not in SupportedModel.as_list():
-        raise ValueError(f"{model} not supported")
-
-    prompt = f"Write a paragraph containing the following sentence:\n[English]: {sentence}"
-    logger.info(f"{prompt=}")
-
-    messages = [{"role": "user", "content": prompt}]
-
-    response = completion(model=model.value, messages=messages, retry_strategy="exponential_backoff_retry")
-    context_sentence = response["choices"][0]["message"]["content"]
-    logger.info(f"{context_sentence=}")
-    return context_sentence
-
-
 def invoke_llm(prompt: str, model: SupportedModel = SupportedModel.GEMINI):
+    logger.info(f"{prompt=}")
     messages = [{"role": "user", "content": prompt}]
-    response = completion(model=model.value, messages=messages, retry_strategy="exponential_backoff_retry")
-    content = response["choices"][0]["message"]["content"]
-    logger.info(f"{content=}")
-    return content
+    try:
+        response = completion(model=model.value, messages=messages, retry_strategy="exponential_backoff_retry")
+        llm_response = response["choices"][0]["message"]["content"]
+        logger.info(f"{llm_response=}")
+    except Exception as e:
+        logger.error(f"An error occurred during LLM invocation: {e}")
+        return "An error occurred while processing your request. Please try again later."
+
+    return llm_response

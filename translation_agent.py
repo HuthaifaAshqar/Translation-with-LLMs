@@ -9,7 +9,7 @@ from loguru import logger
 from tqdm import tqdm
 
 from constants import SupportedModel
-from utils import generate_context_paragraph, invoke_llm
+from utils import invoke_llm
 
 
 class TranslationAgent:
@@ -72,17 +72,17 @@ class TranslationAgent:
             extra_sentences[lang] = [s["text"] for s in lang_sentences]
 
         self.sampled_df = df
-        self.sampled_df.to_csv("data.csv", index=False)
+        self.sampled_df.to_csv(f"sample_{n}.csv", index=False)
 
         self.extra_sentences = extra_sentences
         return self
 
     def generate_context(self):
         for index, row in tqdm(self.sampled_df.iterrows(), desc="Generate context"):
-            context_sentence = generate_context_paragraph(row["eng"], self.model)
+            prompt = f"Write a paragraph containing the following sentence:\n[English]: {row['eng']}"
+            context_sentence = invoke_llm(prompt, self.model)
             self.sampled_df.at[index, "context"] = context_sentence
-
-        # self.sampled_df.to_csv('data.csv', index=False)
+            time.sleep(2)
 
         return self
 
@@ -96,7 +96,6 @@ class TranslationAgent:
                     [{lang}]: {self.extra_sentences[lang][2]}.\n\n
                     Translate this sentence into [{lang}]: {row['eng']}
                 """
-                logger.info(f"translate_with_context {prompt=}")
                 translation = invoke_llm(prompt, self.model)
                 self.sampled_df.at[index, f"{langCode}_translation"] = translation
                 # prevent llm throttling
