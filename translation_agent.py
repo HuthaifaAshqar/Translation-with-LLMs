@@ -109,7 +109,7 @@ class TranslationAgent:
 
         # Define columns: base language, context, target languages, and their translations
         target_lang_codes = list(self.languages_code.values())
-        cols = [self.base_language_code, "context"] + target_lang_codes
+        cols = [self.base_language_code] + target_lang_codes
         df = pd.DataFrame(columns=cols)
         logger.info(f"Initialized DataFrame with columns: {cols}")
 
@@ -201,7 +201,7 @@ class TranslationAgent:
                 f"\n[{self.base_language_name}]: {row[self.base_language_code]}"
             )
             context_sentence = invoke_llm(prompt, self.model)
-            self.sampled_df.at[index, "context"] = context_sentence
+            self.sampled_df.at[index, f"{self.base_language_code}_context"] = context_sentence
             time.sleep(2)  # To prevent throttling
 
         self.sampled_df.to_csv(f"{self.model.name}_data.csv", index=False)
@@ -219,7 +219,7 @@ class TranslationAgent:
                         [{lang_name}]: {extra_texts[1]}.\n
                         [{lang_name}]: {extra_texts[2]}.\n
                         Translate this paragraph from {self.base_language_name} to {lang_name}:\n
-                        [{self.base_language_name}] {row['context']}
+                        [{self.base_language_name}] {row[f'{self.base_language_code}_context']}
                         """
                 translation = invoke_llm(prompt, self.model)
                 self.sampled_df.at[index, f"{lang_code}_context"] = translation
@@ -264,7 +264,7 @@ class TranslationAgent:
             for lang_name, lang_code in self.languages_code.items():
                 extra_texts = self.extra_sentences.get(lang_name, [""] * 3)
                 prompt = f"""
-                        Context: {row['context']}.\n
+                        Context: {row[f'{self.base_language_code}_context']}.\n
                         [{lang_name}]: {extra_texts[0]}.\n
                         [{lang_name}]: {extra_texts[1]}.\n
                         [{lang_name}]: {extra_texts[2]}.\n
