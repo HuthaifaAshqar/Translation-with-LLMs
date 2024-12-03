@@ -1,3 +1,4 @@
+import json
 import os
 
 from datasets import load_dataset
@@ -19,22 +20,57 @@ def make_model_rhyme(model: SupportedModel = SupportedModel.GEMINI):
     logger.info(response["choices"][0]["message"]["content"])
 
 
+def extract_iso_mappings(output_file="iso_mappings.json"):
+    """Extract distinct iso_639_3: iso_15924 pairs and save to a JSON file."""
+    # Load the dataset
+    dataset = load_dataset("openlanguagedata/flores_plus")
+
+    # Select the relevant split (e.g., 'devtest')
+    train_split = dataset["devtest"]
+
+    # Extract distinct pairs
+    iso_mappings = {}
+    for entry in train_split:
+        iso_639_3 = entry["iso_639_3"]
+        iso_15924 = entry["iso_15924"]
+
+        if iso_639_3 and iso_15924:  # Ensure valid values
+            iso_mappings[iso_639_3] = iso_15924
+
+    # Save to the output file
+    with open(output_file, "w") as file:
+        json.dump(iso_mappings, file, indent=4)
+
+    print(f"Extracted mappings saved to {output_file}")
+
+
 def inspect_flores200():
     login(os.environ.get("HF_API_KEY"))
 
     dataset = load_dataset("openlanguagedata/flores_plus")
     logger.info(dataset)
-    train_split = dataset["dev"]
+    train_split = dataset["devtest"]
     logger.info(train_split[0])
 
+    # Extract the 'topic' column values from the 'dev' split
+    # topics = train_split['topic']
+    #
+    # # Get the distinct values of 'topic'
+    # distinct_topics = set(topics)
+    #
+    # # Log the distinct topics
+    # logger.info(f"Distinct topics: {distinct_topics}")
 
-def invoke_llm(prompt: str, model: SupportedModel = SupportedModel.GEMINI):
-    logger.info(f"{prompt=}")
+
+def invoke_llm(prompt: str, model: SupportedModel = SupportedModel.GEMINI, temperature=0):
+    print(f"\nPrompt: \n{prompt}")
     messages = [{"role": "user", "content": prompt}]
     try:
-        response = completion(model=model.value, messages=messages, retry_strategy="exponential_backoff_retry")
+        response = completion(
+            model=model.value, messages=messages, temperature=temperature, retry_strategy="exponential_backoff_retry"
+        )
         llm_response = response["choices"][0]["message"]["content"]
-        logger.info(f"{llm_response=}")
+        print(f"\nLLM Response: \n{llm_response}")
     except Exception as e:
         logger.error(f"An error occurred during LLM invocation: {e}")
         return "An error occurred while processing your request. Please try again later."

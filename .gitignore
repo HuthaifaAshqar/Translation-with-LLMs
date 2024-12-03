@@ -133,3 +133,5 @@ cython_debug/
 
 run_logs.txt
 *.csv
+
+extra_sentences.json
