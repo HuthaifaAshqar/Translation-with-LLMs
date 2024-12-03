@@ -14,7 +14,7 @@ if __name__ == "__main__":
     (
         translator
         # .sample(n=100)
-        .select_model(SupportedModel.LLAMA3)
+        .select_model(SupportedModel.GEMINI)
         .run()
         .select_model(SupportedModel.GPT4O)
         .run()
