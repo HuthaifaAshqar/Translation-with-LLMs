@@ -1,5 +1,6 @@
 import json
 import os
+import random
 import time
 from collections import defaultdict
 from typing import Dict, Optional, Tuple
@@ -81,7 +82,7 @@ class TranslationAgent:
         return self
 
     def run(self):
-        (self.baseline_translation().generate_context().translate_context().translate_qa().translate_with_context())
+        (self.baseline_translation().generate_context().translate_context().mcqa().translate_with_context())
         return self
 
     def sample(self, n: int = 1):
@@ -161,13 +162,14 @@ class TranslationAgent:
             logger.info(f"Sampled 3 extra sentences for language: {lang_name}")
 
         self.sampled_df = df
-        self.sampled_df.to_csv(f"sample_{n}.csv", index=False)
+        save_path = os.path.join("data", f"sample_{n}.csv")
+        self.sampled_df.to_csv(save_path, index=False)
         logger.info(f"Saved sampled data to sample_{n}.csv")
 
         self.extra_sentences = extra_sentences
 
         # Save the extra_sentences dictionary to a file if a path is provided
-        extra_sentences_save_path = "extra_sentences.json"
+        extra_sentences_save_path = os.path.join("data", "extra_sentences.json")
         with open(extra_sentences_save_path, "w", encoding="utf-8") as f:
             json.dump(self.extra_sentences, f, ensure_ascii=False, indent=4)
         logger.info(f"Saved extra sentences to {extra_sentences_save_path}")
@@ -176,16 +178,18 @@ class TranslationAgent:
 
     def baseline_translation(self):
         for index, row in tqdm(self.sampled_df.iterrows(), desc="baseline translation", total=self.sampled_df.shape[0]):
+            system_message = "Translate directly, don't include explanation, response with the translation only."
             for lang_name, lang_code in self.languages_code.items():
                 prompt = f"""
                         [{self.base_language_name}] {row[self.base_language_code]}.\n
                         [{lang_name}]
                         """
-                translation = invoke_llm(prompt, self.model)
+                translation = invoke_llm(prompt, self.model, system_message)
                 self.sampled_df.at[index, f"{lang_code}_base_translation"] = translation
                 time.sleep(2)  # To prevent throttling
 
-        self.sampled_df.to_csv(f"{self.model.name}_data.csv", index=False)
+        saved_path = os.path.join("data", f"{self.model.name}_data.csv")
+        self.sampled_df.to_csv(saved_path, index=False)
 
         return self
 
@@ -204,7 +208,8 @@ class TranslationAgent:
             self.sampled_df.at[index, f"{self.base_language_code}_context"] = context_sentence
             time.sleep(2)  # To prevent throttling
 
-        self.sampled_df.to_csv(f"{self.model.name}_data.csv", index=False)
+        save_path = os.path.join("data", f"{self.model.name}_data.csv")
+        self.sampled_df.to_csv(save_path, index=False)
         return self
 
     def translate_context(self):
@@ -225,22 +230,25 @@ class TranslationAgent:
                 self.sampled_df.at[index, f"{lang_code}_context"] = translation
                 time.sleep(2)  # To prevent throttling
 
-        self.sampled_df.to_csv(f"{self.model.name}_data.csv", index=False)
+        save_path = os.path.join("data", f"{self.model.name}_data.csv")
+        self.sampled_df.to_csv(save_path, index=False)
 
         return self
 
-    def translate_qa(self):
+    def mcqa(self):
         for index, row in tqdm(self.sampled_df.iterrows(), desc="LLM MCQA", total=self.sampled_df.shape[0]):
             for lang_name, lang_code in self.languages_code.items():
                 prompt = f"""
-                        Identify the sentences that are translations of the following
+                        Which of the following sentences are translations of the following
                         {self.base_language_name} sentence.
-                        You may select multiple answers.
-                        Respond only with choice numbers separated by commas, without any extra text.
+                        Respond only with the correct sentence itself,
+                        without including the choice number or any additional text.
                         [{self.base_language_name}] {row[self.base_language_code]}.
                         """
                 translated_context = row[f"{lang_code}_context"]
-                choices = translated_context.lstrip().rstrip().split(".")
+                choices = [choice for choice in translated_context.lstrip().rstrip().split(".") if choice.strip()]
+                # shuffle choices to not help model inspect the correct translation from the order of text.
+                random.shuffle(choices)
                 for idx, choice in enumerate(choices):
                     prompt += f"\n{idx+1}. {choice}."
 
@@ -248,7 +256,8 @@ class TranslationAgent:
                 self.sampled_df.at[index, f"{lang_code}_mcqa"] = translation
                 time.sleep(2)  # To prevent throttling
 
-        self.sampled_df.to_csv(f"{self.model.name}_data.csv", index=False)
+        save_path = os.path.join("data", f"{self.model.name}_data.csv")
+        self.sampled_df.to_csv(save_path, index=False)
 
         return self
 
@@ -274,6 +283,7 @@ class TranslationAgent:
                 self.sampled_df.at[index, f"{lang_code}_translate_with_context"] = translation
                 time.sleep(2)  # To prevent throttling
 
-        self.sampled_df.to_csv(f"{self.model.name}_data.csv", index=False)
+        save_path = os.path.join("data", f"{self.model.name}_data.csv")
+        self.sampled_df.to_csv(save_path, index=False)
 
         return self
