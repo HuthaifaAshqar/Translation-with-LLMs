@@ -2,12 +2,12 @@ import json
 import os
 import time
 
+import litellm
 import numpy as np
 from bert_score import score
 from comet import download_model, load_from_checkpoint
 from datasets import load_dataset
 from huggingface_hub import login
-from litellm import completion
 from loguru import logger
 from sacrebleu import corpus_bleu, corpus_chrf
 
@@ -20,7 +20,7 @@ def make_model_rhyme(model: SupportedModel = SupportedModel.GEMINI):
 
     messages = [{"role": "user", "content": "Write a short poem about the sea."}]
 
-    response = completion(model=model.value, messages=messages)
+    response = litellm.completion(model=model.value, messages=messages)
 
     logger.info(response["choices"][0]["message"]["content"])
 
@@ -67,17 +67,22 @@ def inspect_flores200():
     # logger.info(f"Distinct topics: {distinct_topics}")
 
 
-def invoke_llm(prompt: str, model: SupportedModel = SupportedModel.GEMINI, system_message: str = None, temperature=0):
+def invoke_llm(
+    prompt: str, model: SupportedModel = SupportedModel.GEMINI, system_message: str = None, temperature=0, **kwargs
+):
     # print(f"\nPrompt: \n{prompt}")
-
     if system_message:
         messages = [{"role": "system", "content": system_message}, {"role": "user", "content": prompt}]
     else:
         messages = [{"role": "user", "content": prompt}]
 
     try:
-        response = completion(
-            model=model.value, messages=messages, temperature=temperature, retry_strategy="exponential_backoff_retry"
+        response = litellm.completion(
+            model=model.value,
+            messages=messages,
+            temperature=temperature,
+            retry_strategy="exponential_backoff_retry",
+            **kwargs,
         )
         llm_response = response["choices"][0]["message"]["content"]
         # print(f"\nLLM Response: \n{llm_response}")
@@ -85,11 +90,12 @@ def invoke_llm(prompt: str, model: SupportedModel = SupportedModel.GEMINI, syste
         logger.error(f"An error occurred during LLM invocation: {e}")
         time.sleep(10)
         try:
-            response = completion(
+            response = litellm.completion(
                 model=model.value,
                 messages=messages,
                 temperature=temperature,
                 retry_strategy="exponential_backoff_retry",
+                **kwargs,
             )
             llm_response = response["choices"][0]["message"]["content"]
         except Exception as e:

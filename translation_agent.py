@@ -1,11 +1,13 @@
 import json
 import os
 import random
+import re
 import time
 from collections import defaultdict
 from typing import Dict, Optional, Tuple
 
 import pandas as pd
+import yaml
 from datasets import load_dataset
 from huggingface_hub import login
 from loguru import logger
@@ -62,7 +64,9 @@ class TranslationAgent:
 
         # Set language codes
         if languages_code is None:
-            self.languages_code = {"French": "fra", "Arabic": "arb", "Azerbaijani": "azj"}
+            with open("data/languages.yaml") as file:
+                self.languages_code = yaml.safe_load(file)
+
         else:
             self.languages_code = languages_code
 
@@ -246,7 +250,8 @@ class TranslationAgent:
                         [{self.base_language_name}] {row[self.base_language_code]}.
                         """
                 translated_context = row[f"{lang_code}_context"]
-                choices = [choice for choice in translated_context.lstrip().rstrip().split(".") if choice.strip()]
+                choices = [choice.strip() for choice in re.split(r"[.。]", translated_context) if choice.strip()]
+
                 # shuffle choices to not help model inspect the correct translation from the order of text.
                 random.shuffle(choices)
                 for idx, choice in enumerate(choices):
