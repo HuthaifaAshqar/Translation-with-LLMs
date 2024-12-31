@@ -14,3 +14,10 @@ class SupportedModel(Enum):
             if not key.startswith("_") and not inspect.isroutine(value):
                 _list.append(value.value if only_values else value)
         return _list
+
+
+class Flores200Topic(Enum):
+    LAW = ("crime and law", "law", "policy", "united_states_charters_of_freedom/constitution")
+    HEALTH = ("health", "disease, research, canada", "science/disease", "science/sexual health", "science/first aid")
+    NEWS = ("politics", "accident", "disasters and accidents", "politics and conflicts", "international",
+            "internatoinal")
