@@ -5,7 +5,7 @@ from enum import Enum
 class SupportedModel(Enum):
     GEMINI = "gemini/gemini-1.5-flash"
     GPT4O = "openai/gpt-4o-mini"
-    LLAMA3 = "groq/llama-3.1-70b-versatile"
+    LLAMA3 = "fireworks_ai/accounts/fireworks/models/llama-v3p3-70b-instruct"
 
     @classmethod
     def as_list(cls, only_values=False):
